@@ -1,5 +1,6 @@
 from django.db import models
 
+
 """ 
 The file describes the application's DB models,
 each class has an ovveride of the base method __str__
