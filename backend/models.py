@@ -32,9 +32,9 @@ class Product(models.Model):
 
 
 class ProductInfo(models.Model):
-    product = models.ForeignKey(Product, related_name='product-info', on_delete=models.CASCADE,
+    product = models.ForeignKey(Product, related_name='product_info', on_delete=models.CASCADE,
                                 verbose_name='Продукт')
-    shop = models.ForeignKey(Shop,related_name='product-info', on_delete=models.CASCADE,
+    shop = models.ForeignKey(Shop,related_name='product_info', on_delete=models.CASCADE,
                              verbose_name='Магазин')
     name = models.CharField(max_length=255, verbose_name='Наименование')
     quantity = models.IntegerField(verbose_name='Количество')
