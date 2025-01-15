@@ -36,10 +36,12 @@ class ProductInfo(models.Model):
                                 verbose_name='Продукт')
     shop = models.ForeignKey(Shop,related_name='product_info', on_delete=models.CASCADE,
                              verbose_name='Магазин')
-    name = models.CharField(max_length=255, verbose_name='Наименование')
+    #name = models.CharField(max_length=255, verbose_name='Наименование')
     quantity = models.IntegerField(verbose_name='Количество')
     price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Цена')
     price_rrc = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Рекомендуемая розничная цена')
+    model = models.CharField(max_length=80, blank=True, verbose_name='Модель')
+    external_id = models.IntegerField(verbose_name='Внешний ИД')
 
     def __str__(self):
         return f"{self.name} in {self.shop.name}"
