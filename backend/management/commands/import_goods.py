@@ -6,63 +6,35 @@ from backend.models import Category, Product, ProductInfo, Shop, Parameter, Prod
 
 def load_data_from_yaml(file_path):
     """
-    This function download data from yaml file, and return that.
+    This function download data from yaml file, to variable and return that.
+    Функция загружает данные из файла в переменную  data, возвращая ее в результате исполнения.
     """
     with open(file_path, 'r', encoding='utf-8') as file:
         data = yaml.safe_load(file)
     return data
 
 
-
-"""
-def import_goods(data):
-    ""
-    Function import goods from data to database.
-    ""
-    categories_map = {}
-
-    for category in data['categories']: #Importing categories
-        category_obj, created = Category.objects.get_or_create(id=category['id'],
-                                                               defaults={'name': category['name']})
-        categories_map[category['id']] = category_obj
-
-    for good in data['goods']: #Importing goods
-        category = categories_map.get(good['category'])
-        product = Product(
-            id=good['id'],
-            model=good['model'],
-            name=good['name'],
-            price=good['price'],
-            price_rrc=good['price_rrc'],
-            quantity=good['quantity'],
-            category=category
-            )
-        product.save()
-
-        for key, value in good['parameter'].items(): #Importing parameters og goods
-            product_info = ProductInfo(product=product, name=key, value=value)
-            product_info.save()
-            
-            
-"""
 def import_goods(data):
     """
-    Function to import goods from data to database.
+    Function to import goods from data to database, from data variable.
+    Функция импортирует данные в БД из переменной data
     """
-    shop, created = Shop.objects.get_or_create(name=data['shop'])  # Получаем или создаем магазин
+    shop, created = Shop.objects.get_or_create(name=data['shop']) # Get or create shop, Получаем или создаем магазин
 
-    for category in data['categories']:  # Импорт категорий
+    for category in data['categories']:  # Import categories, Импорт категорий
         category_object, _ = Category.objects.get_or_create(id=category['id'], name=category['name'])
-        category_object.shops.add(shop.id)  # Добавляем магазин в категорию
+        category_object.shops.add(shop.id)  #  Add shop to category, Добавляем магазин в категорию
         category_object.save()
 
-    ProductInfo.objects.filter(shop_id=shop.id).delete()  # Удаляем старые данные по товару для текущего магазина
+    ProductInfo.objects.filter(shop_id=shop.id).delete()
+    # Удаляем старые данные по товару для текущего магазина
+    # Delete old data in productinfo for this shop
 
-    for item in data['goods']:  # Импорт товаров
-        # Получаем или создаем продукт в базе данных
+    for item in data['goods']:  # ImportGoods, Импорт товаров
+        # Get or create product in database, Получаем или создаем продукт в базе данных
         product, _ = Product.objects.get_or_create(name=item['name'], category_id=item['category'])
 
-        # Создаем информацию о товаре
+        # Create productinfo, Создаем информацию о товаре
         product_info = ProductInfo.objects.create(
             product_id=product.id,
             external_id=item['id'],
@@ -73,7 +45,7 @@ def import_goods(data):
             shop_id=shop.id
         )
 
-        # Импортируем параметры товара
+        # Import ProductParameter, Импортируем параметры товара
         for name, value in item['parameters'].items():
             parameter_object, _ = Parameter.objects.get_or_create(name=name)
             ProductParameter.objects.create(
