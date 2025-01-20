@@ -15,3 +15,8 @@
 
 ## Запустите сервер 
 * python manage.py runserver
+
+## Проверьте настройки отправки почты в orders/settings.py, и классе RegisterAccountView расроложенного backend/view.py
+*  запустите сервер локального SMTP командой(при проверке на локальном стенде)
+* python -m smtpd -n -c DebuggingServer localhost:1025
+
