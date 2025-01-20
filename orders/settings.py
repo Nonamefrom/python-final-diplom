@@ -123,4 +123,26 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
+# Email settings for production in Gmail, набор настроек для почтового соединения с Gmail
+# Uncomment in production, раскоментировать при настройке на боевом сервере
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_HOST = 'smtp.gmail.com'
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
+#EMAIL_HOST_USER = 'your_email@gmail.com'
+#EMAIL_HOST_PASSWORD = 'your_app_specific_password'
+#DEFAULT_FROM_EMAIL = 'noreply@yourdomain.com'
+#SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Email settings for local debugging, настройки для локальной отладки отправки почты
+# Will be comment in pproduction, закоментировать при настройке боевого сервера
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 1025  # If using a local SMTP server for testing
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+DEFAULT_FROM_EMAIL = 'noreply@localhost'
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
