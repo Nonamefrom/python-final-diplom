@@ -9,6 +9,7 @@ each class has an override of the base method __str__
 class Shop(models.Model):
     name = models.CharField(max_length=50, verbose_name='Название')
     url = models.URLField(max_length=200, null=True, blank=True, verbose_name='Ссылка')
+    state = models.BooleanField(default=True, verbose_name='статус получения заказов')
 
     def __str__(self):
         return self.name
