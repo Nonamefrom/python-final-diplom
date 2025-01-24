@@ -1,0 +1,18 @@
+shop: Цифрус
+categories:
+  - id: 2
+    name: Зубные щетки
+
+goods:
+  - id: 322
+    category: 2
+    model: MI Toothbrush
+    name: Зубная щетка Xiaomi MI9999
+    price: 1000
+    price_rrc: 1290
+    quantity: 8
+    parameters:
+      "Диаметр (мм)": 20
+      "Длина (мм)": 100
+      "Тип": электрическая
+      "Цвет": золотистый
