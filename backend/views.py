@@ -1,17 +1,23 @@
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
-from django.db.models import Q
+from django.db.models import Q, F, Sum
+from rest_framework.permissions import IsAuthenticated
 from django.core.mail import send_mail
-from django.urls import reverse
 from django.conf import settings
+from rest_framework.decorators import action
+from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
-from backend.serializers import LoginSerializer, RegisterAccountSerializer, ProductInfoSerializer
-from backend.models import ProductInfo
+from rest_framework.viewsets import ViewSet
+
+from backend.serializers import (LoginSerializer, RegisterAccountSerializer, ProductInfoSerializer,
+                                 OrderSerializer, OrderedItemSerializer)
+from backend.models import ProductInfo, Order, OrderedItem
 
 
 class LoginView(APIView):
@@ -146,3 +152,67 @@ class ProductInfoView(APIView):
 
         serializer = ProductInfoSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class BasketViewSet(ViewSet):
+    """
+    A viewset for managing the user's shopping basket.
+
+    Methods:
+    - list (GET): Retrieve the items in the user's basket.
+    - create (POST): Add an item to the user's basket.
+    - update (PUT): Update the quantity of an item in the user's basket.
+    - destroy (DELETE): Remove all items from the user's basket or a specific item if provided.
+    """
+
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
+    def list(self, request, *args, **kwargs):
+        user_orders = Order.objects.filter(user=request.user, status='basket')
+        serializer = OrderSerializer(user_orders, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        product_info_id = request.data.get('product_info_id')
+        quantity = request.data.get('quantity', 1)
+
+        if not product_info_id:
+            return Response({'Status': False, 'Error': 'Product info ID is required'}, status=400)
+
+        product_info = get_object_or_404(ProductInfo, id=product_info_id)
+
+        order, _ = Order.objects.get_or_create(user=request.user, status='basket')
+        shop = product_info.shop  # или другой способ получить shop, если он связан с product_info
+        ordered_item, created = OrderedItem.objects.get_or_create(
+            order=order,
+            product_info=product_info,
+            shop=shop,  # передаем shop_id
+            defaults={'quantity': quantity}
+        )
+        if not created:
+            ordered_item.quantity += int(quantity)
+            ordered_item.save()
+
+        return Response({'Status': True, 'Message': 'Item added to basket'})
+
+    def update(self, request, pk=None):
+        quantity = request.data.get('quantity')
+
+        if not quantity:
+            return Response({'Status': False, 'Error': 'Quantity is required'}, status=400)
+
+        ordered_item = get_object_or_404(OrderedItem, id=pk, order__user=request.user, order__status='basket')
+        ordered_item.quantity = quantity
+        ordered_item.save()
+
+        return Response({'Status': True, 'Message': 'Item quantity updated'})
+
+    def destroy(self, request, pk=None):
+        if pk:
+            ordered_item = get_object_or_404(OrderedItem, id=pk, order__user=request.user, order__status='basket')
+            ordered_item.delete()
+            return Response({'Status': True, 'Message': 'Item removed from basket'})
+        else:
+            Order.objects.filter(user=request.user, state='basket').delete()
+            return Response({'Status': True, 'Message': 'Basket cleared'})
