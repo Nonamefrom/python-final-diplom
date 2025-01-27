@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 """ 
 The file describes the application's DB models,
-each class has an override of the base method __str__
+some class has an override of the base method __str__
 """
 class Shop(models.Model):
     name = models.CharField(max_length=50, verbose_name='Название')
@@ -14,6 +14,11 @@ class Shop(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = 'Магазин'
+        verbose_name_plural = "Список магазинов"
+        ordering = ('id',)
+
 
 class Category(models.Model):
     shops = models.ManyToManyField(Shop, related_name='categories', verbose_name='Магазины')
@@ -21,6 +26,11 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = 'Категория товаров'
+        verbose_name_plural = "Категории"
+        ordering = ('name',)
 
 
 class Product(models.Model):
@@ -30,6 +40,11 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name = 'Товар'
+        verbose_name_plural = "Товары"
+        ordering = ('id',)
 
 
 class ProductInfo(models.Model):
@@ -91,15 +106,20 @@ class OrderedItem(models.Model):
 
 
 class Contact(models.Model):
-    CONTACT_TYPES = [
-        ('email', 'Email'),
-        ('phone', 'Phone'),
-        ('address', 'Address'),
-    ]
-    type = models.CharField(max_length=20,choices=CONTACT_TYPES)
+
     user = models.ForeignKey(User, related_name='contacts', on_delete=models.CASCADE,
                              verbose_name='Пользователь')
-    value = models.CharField(max_length=100)
+    city = models.CharField(max_length=50, verbose_name='Город', default='')
+    street = models.CharField(max_length=100, verbose_name='Улица', default='')
+    house = models.CharField(max_length=15, verbose_name='Дом', blank=True)
+    structure = models.CharField(max_length=15, verbose_name='Корпус', blank=True)
+    building = models.CharField(max_length=15, verbose_name='Строение', blank=True)
+    apartment = models.CharField(max_length=15, verbose_name='Квартира', blank=True)
+    phone = models.CharField(max_length=20, verbose_name='Телефон', default='')
+
+    class Meta:
+        verbose_name = 'Контакты пользователя'
+        verbose_name_plural = "Список контактов пользователя"
 
     def __str__(self):
-        return f"{self.type}: {self.value}"
+        return f'{self.city} {self.street} {self.house}'
