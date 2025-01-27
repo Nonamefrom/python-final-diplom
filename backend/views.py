@@ -244,3 +244,23 @@ class ContactViewSet(viewsets.ModelViewSet):
         Устанавливает текущего пользователя как владельца контакта.
         """
         serializer.save(user=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        """
+        Return phone and address contacts for the user.
+        Возвращает телефон и список адресов для пользователя.
+        """
+        user = request.user
+        contacts = self.get_queryset()
+
+        # Extract the phone
+        phone = contacts.filter(phone__isnull=False).values_list('phone', flat=True).first()
+
+        # Extract addresses
+        addresses = contacts.filter(city__isnull=False, street__isnull=False)
+        serializer = self.get_serializer(addresses, many=True)
+
+        return Response({
+            "phone": phone,
+            "contacts": serializer.data
+        })
