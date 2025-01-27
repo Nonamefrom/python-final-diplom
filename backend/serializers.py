@@ -136,15 +136,12 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contact
         fields = [
-            'id',
-            'user',
             'city',
             'street',
             'house',
             'structure',
             'building',
             'apartment',
-            'phone',
         ]
         read_only_fields = ['id', 'user']
 
