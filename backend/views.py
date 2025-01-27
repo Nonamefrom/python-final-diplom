@@ -2,7 +2,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.request import Request
-from rest_framework import status
+from rest_framework import status, viewsets
 from django.db.models import Q, F, Sum
 from rest_framework.permissions import IsAuthenticated
 from django.core.mail import send_mail
@@ -16,8 +16,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.viewsets import ViewSet
 
 from backend.serializers import (LoginSerializer, RegisterAccountSerializer, ProductInfoSerializer,
-                                 OrderSerializer, OrderedItemSerializer)
-from backend.models import ProductInfo, Order, OrderedItem
+                                 OrderSerializer, OrderedItemSerializer, ContactSerializer)
+from backend.models import ProductInfo, Order, OrderedItem, Contact
 
 
 class LoginView(APIView):
@@ -216,3 +216,31 @@ class BasketViewSet(ViewSet):
         else:
             Order.objects.filter(user=request.user, state='basket').delete()
             return Response({'Status': True, 'Message': 'Basket cleared'})
+
+
+class ContactViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing user contacts.
+    ViewSet для управления контактами пользователя.
+    Предоставляет методы:
+        - GET: Get list of contacts for this user. Получение списка контактов или информации о конкретном контакте.
+        - POST: Add new contact. Добавление нового контакта.
+        - PUT: Update existing contact. Обновление существующего контакта.
+        - DELETE: Delete contact. Удаление контакта.
+    """
+    serializer_class = ContactSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Return contacts, filtered by the current user.
+        Возвращает контакты, принадлежащие текущему пользователю.
+        """
+        return Contact.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """
+        Set the current user as the owner of the contact.
+        Устанавливает текущего пользователя как владельца контакта.
+        """
+        serializer.save(user=self.request.user)
