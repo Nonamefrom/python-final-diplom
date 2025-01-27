@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Shop, Product, ProductInfo, Category
+from .models import Shop, Product, ProductInfo, Category, Contact
 
 
 class ProductInfoInline(admin.TabularInline):
@@ -15,3 +15,4 @@ admin.site.register(Shop)
 admin.site.register(Category)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductInfo)
+admin.site.register(Contact)
