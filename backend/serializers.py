@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from .models import Product, ProductParameter, ProductInfo, Order, OrderedItem
+from rest_framework.exceptions import ValidationError
+from .models import Product, ProductParameter, ProductInfo, Order, OrderedItem, Contact
 
 
 class LoginSerializer(serializers.Serializer):
@@ -123,3 +124,65 @@ class OrderSerializer(serializers.ModelSerializer):
         Рассчитывает общий total итог корзины.
         """
         return sum(item.quantity * item.product_info.price for item in obj.orders_items.all())
+
+
+class ContactSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Contact, provides information about the contact, including user, city, street, house,
+    structure, building, apartment, and phone.
+    Сериализатор для модели контактов юзера (Contact).
+    Позволяет добавлять, обновлять, удалять и просматривать адреса доставки.
+    """
+    class Meta:
+        model = Contact
+        fields = [
+            'id',
+            'user',
+            'city',
+            'street',
+            'house',
+            'structure',
+            'building',
+            'apartment',
+            'phone',
+        ]
+        read_only_fields = ['id', 'user']
+
+    def validate(self, attrs):
+        """
+        Validate:
+        - User has not more than 5 addresses.
+        - User has not more than 1 phone number.
+        Проверяет, что:
+        - Пользователь имеет не более 5 адресов.
+        - Пользователь имеет не более 1 телефона.
+        """
+        user = self.context['request'].user
+
+        # Validate not more 5 adresses, Проверка не более 5адресов
+        existing_addresses = Contact.objects.filter(user=user).exclude(city="", street="")
+        if existing_addresses.count() >= 5 and attrs.get('city') and attrs.get('street'):
+            raise ValidationError("Вы можете сохранить не более 5 адресов.")
+
+        # Validate single phone for user,Проверка одного телефона пользователя
+        existing_phone = Contact.objects.filter(user=user, phone__isnull=False).exclude(phone="")
+        if existing_phone.exists() and attrs.get('phone'):
+            raise ValidationError("Вы можете сохранить только один номер телефона.")
+
+        return attrs
+
+    def create(self, validated_data):
+        """
+        Set the current user as the owner of the contact.
+        Устанавливает текущего пользователя как владельца контакта при создании.
+        """
+        user = self.context['request'].user
+        validated_data['user'] = user
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        """
+        Updates contact data.
+        Обновляет данные контакта.
+        """
+        return super().update(instance, validated_data)
