@@ -1,13 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from backend.views import (LoginView, RegisterAccountView, ConfirmEmailView, ProductInfoView, BasketViewSet,
-                           ContactViewSet)
+                           ContactViewSet, OrderViewSet)
 
 
 app_name = 'backend'
 router = DefaultRouter()
 router.register(r'basket', BasketViewSet, basename='basket') # Route for basketApi, роут для корзины
 router.register(r'contacts', ContactViewSet, basename='contact') # Route for contactApi, роут для контактов
+router.register(r'orders', OrderViewSet, basename='orders')
 """
 Urlpatterns for backend api
 Урлпаттерны для api приложения backend
