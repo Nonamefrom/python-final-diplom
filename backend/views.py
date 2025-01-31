@@ -16,7 +16,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.viewsets import ViewSet
 
 from backend.serializers import (LoginSerializer, RegisterAccountSerializer, ProductInfoSerializer,
-                                 OrderSerializer, OrderedItemSerializer, ContactSerializer)
+                                 OrderSerializer, OrderConfirmSerializer, OrderListSerializer, ContactSerializer)
 from backend.models import ProductInfo, Order, OrderedItem, Contact
 
 
@@ -54,18 +54,21 @@ class LoginView(APIView):
 class RegisterAccountView(APIView):
     """
     Class and post method for registering users.
-    Checks if email exists in DB, saves user, and sends confirmation email or prints the confirmation link.
-    Variables(fields): name, surname, email, password
+    Класс и post  запрос для регистрации пользователей
+    Checks if email exists in DB, saves user, and sends confirmation email.
+    Проверяет наличие мейл в БД и сохраняет юзера и отправляет письмо с подтверждением
+    Variables(fields) входящие переменные(поля): name, surname, email, password
     Responce: status code and message if all variables are valid, status code and message
+    В ответе статус код и сообщение если все поля валидны
     """
     def post(self, request):
         serializer = RegisterAccountSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                # Save the user
+                # Save the user, сохраняем пользователя
                 user = serializer.save()
 
-                # Generate email confirmation link
+                # Generate email confirmation link, генерируем ссылку подтверждение
                 confirmation_link = request.build_absolute_uri(
                     reverse('backend:confirm-email', kwargs={'user_id': user.id})
                 )
@@ -157,7 +160,7 @@ class ProductInfoView(APIView):
 class BasketViewSet(ViewSet):
     """
     A viewset for managing the user's shopping basket.
-
+    Набор для управления пользовательской корзиной.
     Methods:
     - list (GET): Retrieve the items in the user's basket.
     - create (POST): Add an item to the user's basket.
@@ -253,10 +256,10 @@ class ContactViewSet(viewsets.ModelViewSet):
         user = request.user
         contacts = self.get_queryset()
 
-        # Extract the phone
+        # Extract the phone, изымаем телефон
         phone = contacts.filter(phone__isnull=False).values_list('phone', flat=True).first()
 
-        # Extract addresses
+        # Extract addresses, изымаем адреса
         addresses = contacts.filter(city__isnull=False, street__isnull=False)
         serializer = self.get_serializer(addresses, many=True)
 
@@ -264,3 +267,89 @@ class ContactViewSet(viewsets.ModelViewSet):
             "phone": phone,
             "contacts": serializer.data
         })
+
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing user orders.
+    ViewSet для управления заказами пользователя.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Returns orders for the current user, or all orders if the user is staff.
+        Возвращает заказы. Обычным пользователям достыпны свои заказы,
+        сотрудники (is_staff=True) могут видеть все заказы.
+        """
+        if self.request.user.is_staff:
+            return Order.objects.all().select_related('contact').prefetch_related('orders_items__product_info')
+        return Order.objects.filter(user=self.request.user).select_related('contact').prefetch_related(
+            'orders_items__product_info')
+
+    def get_serializer_class(self):
+        """
+        Use different serializers.
+        - `OrderListSerializer` for search order's (list)
+        - `OrderSerializer` for detail view order (retrieve)
+        Использует разные сериализаторы:
+        - `OrderListSerializer` для списка заказов (list)
+        - `OrderSerializer` для детального просмотра заказа (retrieve)
+        """
+        if self.action == "list":
+            return OrderListSerializer
+        return OrderSerializer
+
+    @action(detail=False, methods=['post'])
+    def confirm_order(self, request):
+        """
+        Confirm order by basker id and contact id
+        Подтверждение заказа по ID корзины и ID контакта.
+        """
+        serializer = OrderConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        basket_id = serializer.validated_data['basket_id']
+        contact_id = serializer.validated_data['contact_id']
+
+        order = get_object_or_404(Order, id=basket_id, user=request.user, status='basket')
+        contact = get_object_or_404(Contact, id=contact_id, user=request.user)
+
+        # Calculate common total order,Вычисляем общую сумму заказа
+        total_price = sum(item.quantity * item.product_info.price for item in order.orders_items.all())
+
+        # Refresh order, Обновляем заказ
+        order.status = 'confirmed'
+        order.contact = contact
+        order.total_price = total_price
+        order.save()
+
+        # Send mail to user, Отправляем email пользователю
+        send_mail(
+            subject="Подтверждение заказа",
+            message=f"Ваш заказ №{order.id} подтвержден! Сумма: {total_price} руб.\nАдрес доставки: {contact.city}, {contact.street}",
+            from_email="shop@example.com",
+            recipient_list=[request.user.email],
+            fail_silently=False,
+        )
+
+        return Response({"message": "Заказ подтвержден и email отправлен."}, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Update the status of the order.
+        Обновление статусa заказа.
+        """
+        order = self.get_object()
+        new_status = request.data.get('status')
+
+        # Check exist status,Проверяем наличие статуса
+        allowed_statuses = ['basket', 'processing', 'completed', 'canceled']
+        if new_status not in allowed_statuses:
+            return Response({"error": "Недопустимый статус"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.is_staff and new_status in ['processing', 'completed', 'canceled']:
+            return Response({"error": "Вы не можете менять статус заказа"}, status=status.HTTP_403_FORBIDDEN)
+
+        order.status = new_status
+        order.save()
+        return Response({"status": "Обновлено", "new_status": order.status})
