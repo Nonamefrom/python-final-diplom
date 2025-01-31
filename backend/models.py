@@ -84,27 +84,6 @@ class ProductParameter(models.Model):
         return f"{self.parameter.name}: {self.value}"
 
 
-class Order(models.Model):
-    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE, verbose_name='Пользователь')
-    dt = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=50, verbose_name='Статус')
-
-    def __str__(self):
-        return f"Order {self.pk} by {self.user}"
-
-
-class OrderedItem(models.Model):
-    order = models.ForeignKey(Order, related_name='orders_items', on_delete=models.CASCADE,
-                              verbose_name='Заказ')
-    product_info = models.ForeignKey(ProductInfo, related_name='orders_items', null=True, on_delete=models.CASCADE)
-    shop = models.ForeignKey(Shop, related_name='orders_items', on_delete=models.CASCADE,
-                              verbose_name=' Магазин')
-    quantity = models.IntegerField()
-
-    def __str__(self):
-        return f"{self.quantity} of {self.product.name} from {self.shop.name}"
-
-
 class Contact(models.Model):
 
     user = models.ForeignKey(User, related_name='contacts', on_delete=models.CASCADE,
@@ -123,3 +102,35 @@ class Contact(models.Model):
 
     def __str__(self):
         return f'{self.city} {self.street} {self.house}'
+
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('basket', 'Basket'),
+        ('processing', 'Processing'),
+        ('confirmed', 'Confirmed'),
+        ('completed', 'Completed'),
+        ('canceled', 'Canceled'),
+    ]
+    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE, verbose_name='Пользователь')
+    dt = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=50, verbose_name='Статус')
+    contact = models.ForeignKey(Contact, related_name='orders', on_delete=models.SET_NULL, null=True, blank=True,
+                                verbose_name='Контакт (адрес доставки)')
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Сумма заказа')
+
+    def __str__(self):
+        return f"Order {self.pk} - {self.status} by {self.user}"
+
+    class Meta:
+        verbose_name = 'Заказ'
+        verbose_name_plural = "Заказы"
+
+
+class OrderedItem(models.Model):
+    order = models.ForeignKey(Order, related_name='orders_items', on_delete=models.CASCADE, verbose_name='Заказ')
+    product_info = models.ForeignKey(ProductInfo, related_name='orders_items', null=True, on_delete=models.CASCADE)
+    shop = models.ForeignKey(Shop, related_name='orders_items', on_delete=models.CASCADE, verbose_name='Магазин')
+    quantity = models.IntegerField()
+
+    def __str__(self):  # ← убедись, что метод определен правильно
+        return f"{self.quantity} of {self.product_info.product.name} from {self.shop.name}"
