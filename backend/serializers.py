@@ -104,33 +104,11 @@ class OrderedItemSerializer(serializers.ModelSerializer):
         return obj.quantity * obj.product_info.price
 
 
-class OrderSerializer(serializers.ModelSerializer):
-    """
-    Serializer for Order, provides information about the order, including status, associated ordered items (orders_items),
-    and total basket summary (total).
-    Сериализатор Order, предоставляет информацию о заказе, включая статус, связанные заказанные элементы (orders_items),
-    и общий итог корзины (total).
-    """
-    orders_items = OrderedItemSerializer(many=True)  # Serializer for ordered items, сериализатор для заказанных товаров
-    total = serializers.SerializerMethodField()  #Summary total prise in basket, Поле для общего итога корзины
-
-    class Meta:
-        model = Order
-        fields = ['id', 'status', 'orders_items', 'total']
-
-    def get_total(self, obj):
-        """
-        Summary total price in basket.
-        Рассчитывает общий total итог корзины.
-        """
-        return sum(item.quantity * item.product_info.price for item in obj.orders_items.all())
-
-
 class ContactSerializer(serializers.ModelSerializer):
     """
     Serializer for Contact, provides information about the contact, including user, city, street, house,
     structure, building, apartment, and phone.
-    Сериализатор для модели контактов юзера (Contact).
+    Сериалайзер модели контактов юзера (Contact).
     Позволяет добавлять, обновлять, удалять и просматривать адреса доставки.
     """
     class Meta:
@@ -183,3 +161,54 @@ class ContactSerializer(serializers.ModelSerializer):
         Обновляет данные контакта.
         """
         return super().update(instance, validated_data)
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Order, provides information about the order, including status, associated ordered items (orders_items),
+    and total basket summary (total).
+    Сериализатор Order, предоставляет информацию о заказе, включая статус, связанные заказанные элементы (orders_items),
+    и общий итог корзины (total).
+    """
+    orders_items = OrderedItemSerializer(many=True, read_only=True)  # Serializer for ordered items, сериализатор для заказанных товаров
+    total = serializers.SerializerMethodField()  #Summary total prise in basket, Поле для общего итога корзины
+    status = serializers.ChoiceField(choices=['basket', 'processing', 'completed', 'canceled'], required=False)
+    contact = ContactSerializer(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = ['id', 'status', 'orders_items', 'total', 'dt', 'contact']
+        depth = 1
+
+    def get_total(self, obj):
+        """
+        Summary total price in basket.
+        Рассчитывает общий total итог корзины.
+        """
+        return sum(item.quantity * item.product_info.price for item in obj.orders_items.all())
+
+
+class OrderConfirmSerializer(serializers.Serializer):
+    """
+    Serializer for confirming an order.
+    Сериалайзер подтверждения заказа.
+    """
+    basket_id = serializers.IntegerField()
+    contact_id = serializers.IntegerField()
+
+
+class OrderListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing user orders.
+    Сериалайзер вывода списка заказов пользователя.
+    """
+    total = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Order
+        fields = ['id', 'dt', 'total', 'status']
+
+    def get_total(self, obj):
+        return obj.total_price
+
+
