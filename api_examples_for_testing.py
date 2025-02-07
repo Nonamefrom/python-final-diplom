@@ -144,3 +144,11 @@ Authorization: Token <your_token>
     "status": "new"
 }
 """
+
+"""
+# Просмотр документации API
+JSON: http://127.0.0.1:8000/api/schema/
+Swagger UI: http://127.0.0.1:8000/api/schema/swagger-ui/
+Redoc: http://127.0.0.1:8000/api/schema/redoc/
+Сырые данные OpenAPI: http://127.0.0.1:8000/api/schema/
+"""
