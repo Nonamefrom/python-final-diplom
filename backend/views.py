@@ -14,6 +14,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.viewsets import ViewSet
+from .tasks import send_order_confirmation_email
 
 from backend.serializers import (LoginSerializer, RegisterAccountSerializer, ProductInfoSerializer,
                                  OrderSerializer, OrderConfirmSerializer, OrderListSerializer, ContactSerializer)
@@ -274,6 +275,8 @@ class OrderViewSet(viewsets.ModelViewSet):
     ViewSet для управления заказами пользователя.
     """
     permission_classes = [IsAuthenticated]
+    queryset = Order.objects.all()
+    serializer_class = OrderConfirmSerializer
 
     def get_queryset(self):
         """
@@ -323,16 +326,20 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.total_price = total_price
         order.save()
 
-        # Send mail to user, Отправляем email пользователю
-        send_mail(
-            subject="Подтверждение заказа",
-            message=f"Ваш заказ №{order.id} подтвержден! Сумма: {total_price} руб.\nАдрес доставки: {contact.city}, {contact.street}",
-            from_email="shop@example.com",
-            recipient_list=[request.user.email],
-            fail_silently=False,
-        )
+        send_order_confirmation_email.delay(order.id, request.user.email, total_price, contact.city, contact.street)
 
-        return Response({"message": "Заказ подтвержден и email отправлен."}, status=status.HTTP_200_OK)
+        return Response({"message": f"Заказ №{order.id} подтвержден, письмо отправляется!"})
+
+        # Send mail to user, Отправляем email пользователю
+        #send_mail(
+            #subject="Подтверждение заказа",
+            #message=f"Ваш заказ №{order.id} подтвержден! Сумма: {total_price} руб.\nАдрес доставки: {contact.city}, {contact.street}",
+            #from_email="shop@example.com",
+            #recipient_list=[request.user.email],
+            #fail_silently=False,
+        #)
+
+        #return Response({"message": "Заказ подтвержден и email отправлен."}, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
         """
