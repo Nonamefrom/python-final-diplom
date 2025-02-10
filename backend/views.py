@@ -1,3 +1,5 @@
+import requests
+from django.core.files.base import ContentFile
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,11 +16,12 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 from rest_framework.viewsets import ViewSet
-from .tasks import send_order_confirmation_email
+from .tasks import send_order_confirmation_email, process_user_avatar, process_product_image
 
 from backend.serializers import (LoginSerializer, RegisterAccountSerializer, ProductInfoSerializer,
-                                 OrderSerializer, OrderConfirmSerializer, OrderListSerializer, ContactSerializer)
-from backend.models import ProductInfo, Order, OrderedItem, Contact
+                                 OrderSerializer, OrderConfirmSerializer, OrderListSerializer, ContactSerializer,
+                                 )
+from backend.models import ProductInfo, Order, OrderedItem, Contact, UserProfile, ProductImage
 
 
 class LoginView(APIView):
@@ -330,7 +333,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         return Response({"message": f"Заказ №{order.id} подтвержден, письмо отправляется!"})
 
-        # Send mail to user, Отправляем email пользователю
+        # Send mail to user, Отправляем email пользователю синхронно
         #send_mail(
             #subject="Подтверждение заказа",
             #message=f"Ваш заказ №{order.id} подтвержден! Сумма: {total_price} руб.\nАдрес доставки: {contact.city}, {contact.street}",
@@ -360,3 +363,63 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.status = new_status
         order.save()
         return Response({"status": "Обновлено", "new_status": order.status})
+
+
+class UserProfileViewSet(viewsets.ViewSet):
+
+    @action(detail=False, methods=['post'])
+    def foto_load(self, request):
+        """Загрузка аватара (по ссылке или файлом)"""
+        user = request.user
+        user_profile, created = UserProfile.objects.get_or_create(user=user)  # Гарантируем, что профиль существует
+
+        avatar_url = request.data.get('url')
+        avatar_file = request.FILES.get('file')
+
+        if avatar_url:
+            response = requests.get(avatar_url)
+            if response.status_code == 200:
+                user_profile.avatar.save(f"{user.id}_avatar.jpg", ContentFile(response.content))
+                process_user_avatar.delay(user_profile.avatar.name)  # Отправляем в Celery
+                return Response({"message": "Аватар загружается в фоне"}, status=status.HTTP_200_OK)
+            return Response({"error": "Не удалось загрузить изображение"}, status=status.HTTP_400_BAD_REQUEST)
+
+        elif avatar_file:
+            user_profile.avatar = avatar_file
+            user_profile.save()
+            process_user_avatar.delay(user_profile.avatar.name)  # Отправляем в Celery
+            return Response({"message": "Аватар загружен и обрабатывается"}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Укажите URL или загрузите файл"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProductImageViewSet(viewsets.ViewSet):
+
+    @action(detail=False, methods=['post'])
+    def load_foto(self, request):
+        """Загрузка изображения товара (по ссылке или файлом)"""
+        product_info_id = request.data.get('product_info_id')
+        product_info = get_object_or_404(ProductInfo, id=product_info_id)
+        product = product_info.product  # Получаем связанный Product
+
+        # Найти или создать ProductImage
+        product_image, created = ProductImage.objects.get_or_create(product=product)
+
+        image_url = request.data.get('url')
+        image_file = request.FILES.get('file')
+
+        if image_url:
+            response = requests.get(image_url)
+            if response.status_code == 200:
+                product_image.image.save(f"product_{product.id}.jpg", ContentFile(response.content))
+                process_product_image.delay(product_image.image.name)  # Отправляем в Celery
+                return Response({"message": "Изображение загружается в фоне"}, status=status.HTTP_200_OK)
+            return Response({"error": "Не удалось загрузить изображение"}, status=status.HTTP_400_BAD_REQUEST)
+
+        elif image_file:
+            product_image.image = image_file
+            product_image.save()
+            process_product_image.delay(product_image.image.name)  # Отправляем в Celery
+            return Response({"message": "Изображение загружено и обрабатывается"}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Укажите URL или загрузите файл"}, status=status.HTTP_400_BAD_REQUEST)
