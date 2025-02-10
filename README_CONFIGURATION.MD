@@ -25,3 +25,9 @@
 * При тестировании с использованием Postman Desktop, авторизацию следует передавать в качестве пары "Authorization": 'Token token_from_login' во вкладке  Headers
 
 ## SwaggerUI документация доступна по адресу http://127.0.0.1:8000/api/v1/docs/ при локальном запуске
+
+## Для запуска сервера с поддержкой Celery необходимо выполнить следующие команды:
+* В одной вкладке терминала запустить сервер
+* python manage.py runserver
+* Во второй вкладке терминала запустить celery 
+* celery -A orders worker --loglevel=info
