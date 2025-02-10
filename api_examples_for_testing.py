@@ -152,3 +152,30 @@ Swagger UI: http://127.0.0.1:8000/api/schema/swagger-ui/
 Redoc: http://127.0.0.1:8000/api/schema/redoc/
 Сырые данные OpenAPI: http://127.0.0.1:8000/api/schema/
 """
+
+"""
+Загрузка фото по ссылки и файлом
+POST /api/v1/user/foto_load/
+Content-Type: application/json
+Authorization: Token ваш_токен
+
+{
+    "url": "https://example.com/avatar.jpg"
+}
+or
+file: [ваш_файл.jpg]
+"""
+
+"""
+Загрузка изображения товара
+POST /api/v1/products/load_foto/
+Content-Type: application/json
+Authorization: Token ваш_токен
+
+{
+    "product_id": 1,
+    "url": "https://example.com/product.jpg"
+}
+or
+file: [ваш_файл.jpg]
+"""
