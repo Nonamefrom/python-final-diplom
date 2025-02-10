@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from backend.views import (LoginView, RegisterAccountView, ConfirmEmailView, ProductInfoView, BasketViewSet,
-                           ContactViewSet, OrderViewSet)
+                           ContactViewSet, OrderViewSet, UserProfileViewSet, ProductImageViewSet)
 
 
 app_name = 'backend'
@@ -9,6 +9,9 @@ router = DefaultRouter()
 router.register(r'basket', BasketViewSet, basename='basket') # Route for basketApi, роут для корзины
 router.register(r'contacts', ContactViewSet, basename='contact') # Route for contactApi, роут для контактов
 router.register(r'orders', OrderViewSet, basename='orders')
+router.register(r'user', UserProfileViewSet, basename='user')
+router.register(r'products', ProductImageViewSet, basename='product-image')
+
 """
 Urlpatterns for backend api
 Урлпаттерны для api приложения backend
