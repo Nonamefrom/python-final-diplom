@@ -212,3 +212,7 @@ class OrderListSerializer(serializers.ModelSerializer):
         return obj.total_price
 
 
+class UserAvatarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['avatar']
