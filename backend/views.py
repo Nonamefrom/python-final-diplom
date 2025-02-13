@@ -22,6 +22,7 @@ from backend.serializers import (LoginSerializer, RegisterAccountSerializer, Pro
                                  OrderSerializer, OrderConfirmSerializer, OrderListSerializer, ContactSerializer,
                                  )
 from backend.models import ProductInfo, Order, OrderedItem, Contact, UserProfile, ProductImage
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 
 class LoginView(APIView):
@@ -122,6 +123,7 @@ class ProductInfoView(APIView):
     Получение информации о продукте, возможно использование фильтров
     Parameters examples(примеры параметров): ?shop_id=1 ?category_id=2 ?search=Smartphone ?min_price=500&max_price=1000
     """
+    throttle_classes = [UserRateThrottle, AnonRateThrottle]
 
     def get(self, request: Request, *args, **kwargs):
         query = Q(shop__state=True)
