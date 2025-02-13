@@ -164,6 +164,14 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     ),
 
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',  # For not authorized users,для анонимных пользователей
+        'rest_framework.throttling.UserRateThrottle',  # For authorized users,для авторизованных пользователей
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '3/minute',  # Not authorized users,неавторизованные пользователи: 3  per minute, в минуту
+        'user': '5/minute',  # Authorized users,авторизованные пользователи: 5 per minute, в минуту
+    }
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
