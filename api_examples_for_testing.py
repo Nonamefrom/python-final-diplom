@@ -179,3 +179,7 @@ Authorization: Token ваш_токен
 or
 file: [ваш_файл.jpg]
 """
+"""
+# Authorization by Github, Авторизация через GitHub
+http://127.0.0.1:8000/auth/login/github/
+"""
