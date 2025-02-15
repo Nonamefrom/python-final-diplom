@@ -177,12 +177,35 @@ class BasketViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
 
+    def get_authenticated_user(self, request):
+        """Получаем пользователя по токену из заголовков или GET-параметра."""
+        token_key = request.GET.get("auth_token") or request.headers.get("Authorization", "").replace("Token ", "")
+
+        if not token_key:
+            return None
+
+        try:
+            token = Token.objects.get(key=token_key)
+            return token.user
+        except Token.DoesNotExist:
+            return None
+
     def list(self, request, *args, **kwargs):
-        user_orders = Order.objects.filter(user=request.user, status='basket')
+        user = self.get_authenticated_user(request) or request.user
+
+        if not user or not user.is_authenticated:
+            return Response({"error": "Unauthorized"}, status=401)
+
+        user_orders = Order.objects.filter(user=user, status='basket')
         serializer = OrderSerializer(user_orders, many=True)
         return Response(serializer.data)
 
     def create(self, request):
+        user = self.get_authenticated_user(request) or request.user
+
+        if not user or not user.is_authenticated:
+            return Response({"error": "Unauthorized"}, status=401)
+
         product_info_id = request.data.get('product_info_id')
         quantity = request.data.get('quantity', 1)
 
@@ -191,12 +214,12 @@ class BasketViewSet(ViewSet):
 
         product_info = get_object_or_404(ProductInfo, id=product_info_id)
 
-        order, _ = Order.objects.get_or_create(user=request.user, status='basket')
-        shop = product_info.shop  # или другой способ получить shop, если он связан с product_info
+        order, _ = Order.objects.get_or_create(user=user, status='basket')
+        shop = product_info.shop
         ordered_item, created = OrderedItem.objects.get_or_create(
             order=order,
             product_info=product_info,
-            shop=shop,  # передаем shop_id
+            shop=shop,
             defaults={'quantity': quantity}
         )
         if not created:
@@ -206,24 +229,34 @@ class BasketViewSet(ViewSet):
         return Response({'Status': True, 'Message': 'Item added to basket'})
 
     def update(self, request, pk=None):
+        user = self.get_authenticated_user(request) or request.user
+
+        if not user or not user.is_authenticated:
+            return Response({"error": "Unauthorized"}, status=401)
+
         quantity = request.data.get('quantity')
 
         if not quantity:
             return Response({'Status': False, 'Error': 'Quantity is required'}, status=400)
 
-        ordered_item = get_object_or_404(OrderedItem, id=pk, order__user=request.user, order__status='basket')
+        ordered_item = get_object_or_404(OrderedItem, id=pk, order__user=user, order__status='basket')
         ordered_item.quantity = quantity
         ordered_item.save()
 
         return Response({'Status': True, 'Message': 'Item quantity updated'})
 
     def destroy(self, request, pk=None):
+        user = self.get_authenticated_user(request) or request.user
+
+        if not user or not user.is_authenticated:
+            return Response({"error": "Unauthorized"}, status=401)
+
         if pk:
-            ordered_item = get_object_or_404(OrderedItem, id=pk, order__user=request.user, order__status='basket')
+            ordered_item = get_object_or_404(OrderedItem, id=pk, order__user=user, order__status='basket')
             ordered_item.delete()
             return Response({'Status': True, 'Message': 'Item removed from basket'})
         else:
-            Order.objects.filter(user=request.user, state='basket').delete()
+            Order.objects.filter(user=user, status='basket').delete()
             return Response({'Status': True, 'Message': 'Basket cleared'})
 
 
