@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+import logging
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,6 +49,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'easy_thumbnails',
     'django_extensions',
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -162,6 +168,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
 
         'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
 
     'DEFAULT_THROTTLE_CLASSES': [
@@ -197,4 +204,45 @@ THUMBNAIL_ALIASES = {
         'large': {'size': (800, 800), 'crop': False},
     },
 }
+# GitHub OAuth, авторизация через гитлаб
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.github.GithubOAuth2',  # GitHub OAuth
+    'django.contrib.auth.backends.ModelBackend',  # Basic django auth, Обычная аутентификация Django
+)
+# Import github oauth env variables, импорт переменных окружения github oauth
+SOCIAL_AUTH_GITHUB_KEY = os.getenv("SOCIAL_AUTH_GITHUB_KEY")
+SOCIAL_AUTH_GITHUB_SECRET = os.getenv("SOCIAL_AUTH_GITHUB_SECRET")
+SOCIAL_AUTH_GITHUB_SCOPE = ['user:email']
+SOCIAL_AUTH_GITHUB_PROFILE_EXTRA_PARAMS = {'scope': 'user:email'}
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Используем базу данных для хранения сессий
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Сессия не заканчивается с закрытием браузера
+SESSION_COOKIE_AGE = 3600
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.social_auth.associate_by_email',
+    'social_core.pipeline.user.get_username',
+    'orders.pipeline.create_user',  # <-- Исправленный create_user
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+    'orders.pipeline.create_token',  # <-- Создаем токен
+    'orders.pipeline.redirect_to_basket',  # <-- Редирект в корзину
+)
+
+
+SOCIAL_AUTH_PIPELINE += (
+    'social_core.pipeline.debug.debug',
+)
+
+# redirect urls, редиректы ссылок
+LOGIN_REDIRECT_URL = '/api/v1/basket/'
+LOGOUT_REDIRECT_URL = '/'
+logging.basicConfig(level=logging.DEBUG)
+#SOCIAL_AUTH_GITHUB_EXTRA_DATA = ['id', 'email']
+SOCIAL_AUTH_GITHUB_EXTRA_DATA = ['email', 'name', 'first_name', 'last_name', 'access_token']
+
 
