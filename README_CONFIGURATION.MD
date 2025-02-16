@@ -34,3 +34,6 @@
 
 ## Запуск теста примера кеширования запроса к БД
 * python manage.py test backend.tests.test_cache
+
+## Ссылка на документацию Sentry
+* https://student-wlt.sentry.io/issues/?project=4508830264197200&referrer=project-issue-stream
