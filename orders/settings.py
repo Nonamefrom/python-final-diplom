@@ -9,11 +9,12 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
-from pathlib import Path
 import os
-from dotenv import load_dotenv
 import logging
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from pathlib import Path
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -260,3 +261,12 @@ CACHEOPS = {
     'backend.Product': {'ops': 'all', 'timeout': 60 * 15},  # Кэшируем все запросы к Product на 15 минут
     'backend.ProductInfo': {'ops': 'all', 'timeout': 60 * 10},  # Кэшируем ProductInfo на 10 минут
 }
+# Sentry settings, настройки Sentry
+SENTRY_DSN = "https://74fb7468bdb64dc447a14742ba004442@o4508830241652736.ingest.de.sentry.io/4508830264197200"
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[DjangoIntegration()],
+    traces_sample_rate=1.0,  # Уровень логирования, 1.0 - логировать всё
+    send_default_pii=True,  # Передача user-информации (PII)
+)
