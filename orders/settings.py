@@ -196,7 +196,7 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-
+# Alliases for thumbnails, алиасы для миниатюр
 THUMBNAIL_ALIASES = {
     '': {
         'small': {'size': (100, 100), 'crop': True},
@@ -217,20 +217,20 @@ SOCIAL_AUTH_GITHUB_PROFILE_EXTRA_PARAMS = {'scope': 'user:email'}
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Используем базу данных для хранения сессий
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Сессия не заканчивается с закрытием браузера
 SESSION_COOKIE_AGE = 3600
-
+# Pipeline github oauth, pipeline авторизации github
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
     'social_core.pipeline.social_auth.social_uid',
     'social_core.pipeline.social_auth.social_user',
     'social_core.pipeline.social_auth.associate_by_email',
     'social_core.pipeline.user.get_username',
-    'orders.pipeline.create_user',  # <-- Исправленный create_user
+    'orders.pipeline.create_user',
     'social_core.pipeline.user.create_user',
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
-    'orders.pipeline.create_token',  # <-- Создаем токен
-    'orders.pipeline.redirect_to_basket',  # <-- Редирект в корзину
+    'orders.pipeline.create_token',
+    'orders.pipeline.redirect_to_basket',
 )
 
 
@@ -242,7 +242,21 @@ SOCIAL_AUTH_PIPELINE += (
 LOGIN_REDIRECT_URL = '/api/v1/basket/'
 LOGOUT_REDIRECT_URL = '/'
 logging.basicConfig(level=logging.DEBUG)
-#SOCIAL_AUTH_GITHUB_EXTRA_DATA = ['id', 'email']
 SOCIAL_AUTH_GITHUB_EXTRA_DATA = ['email', 'name', 'first_name', 'last_name', 'access_token']
+# Cashe for redis, кэш для Redis
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",  # Redis на localhost, БД №1
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+# Settings casheops, настройки кэша casheops
+INSTALLED_APPS += ["cacheops"]
 
-
+CACHEOPS = {
+    'backend.Product': {'ops': 'all', 'timeout': 60 * 15},  # Кэшируем все запросы к Product на 15 минут
+    'backend.ProductInfo': {'ops': 'all', 'timeout': 60 * 10},  # Кэшируем ProductInfo на 10 минут
+}
