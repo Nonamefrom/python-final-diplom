@@ -31,3 +31,6 @@
 * python manage.py runserver
 * Во второй вкладке терминала запустить celery 
 * celery -A orders worker --loglevel=info
+
+## Запуск теста примера кеширования запроса к БД
+* python manage.py test backend.tests.test_cache
