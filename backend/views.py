@@ -1,4 +1,5 @@
 import requests
+import sentry_sdk
 from django.core.files.base import ContentFile
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -464,3 +465,10 @@ class ProductImageViewSet(viewsets.ViewSet):
             return Response({"message": "Изображение загружено и обрабатывается"}, status=status.HTTP_200_OK)
 
         return Response({"error": "Укажите URL или загрузите файл"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SentryTestView(APIView):
+    def get(self, request):
+        sentry_sdk.capture_message("Тестовое сообщение Sentry!")
+        raise ValueError("Это тестовое исключение, отправляемое в Sentry!")
+    
