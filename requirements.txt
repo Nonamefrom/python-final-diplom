@@ -12,3 +12,5 @@ celery==5.3.6
 social_auth_app_django==5.4.3
 easy-thumbnails~=2.10
 python-dotenv~=1.0.1
+django-redis==5.4.0
+django-cacheops==7.1
