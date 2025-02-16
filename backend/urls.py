@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from backend.views import (LoginView, RegisterAccountView, ConfirmEmailView, ProductInfoView, BasketViewSet,
-                           ContactViewSet, OrderViewSet, UserProfileViewSet, ProductImageViewSet)
+                           ContactViewSet, OrderViewSet, UserProfileViewSet, ProductImageViewSet, SentryTestView)
 
 
 app_name = 'backend'
@@ -22,4 +22,5 @@ urlpatterns = [
     path('confirm-email/<int:user_id>/', ConfirmEmailView.as_view(), name='confirm-email'),
     path('products/', ProductInfoView.as_view(), name='product-list'),
     path('', include(router.urls)), # Add route for viewset, добавляем роуты для viewset
+    path("sentry-test/", SentryTestView.as_view(), name="sentry-test"),
     ]
