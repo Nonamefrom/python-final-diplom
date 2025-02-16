@@ -4,6 +4,9 @@ from django.core.cache import cache
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 
+
+# Disable cache decorator in view
+# Перед запуском - закоментировать декоратор кеширования к методу продкутов
 class ThrottlingTestCase(APITestCase):
     def setUp(self):
         cache.clear()
