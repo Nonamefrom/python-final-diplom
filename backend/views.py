@@ -1,5 +1,7 @@
 import requests
 from django.core.files.base import ContentFile
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -114,6 +116,7 @@ class ConfirmEmailView(APIView):
         return Response({"message": "Email confirmed successfully."}, status=status.HTTP_200_OK)
 
 
+@method_decorator(cache_page(60 * 5), name="dispatch")
 class ProductInfoView(APIView):
     """
     A class for searching products view, based on the specified filters with get parameters
@@ -260,6 +263,7 @@ class BasketViewSet(ViewSet):
             return Response({'Status': True, 'Message': 'Basket cleared'})
 
 
+@method_decorator(cache_page(60 * 5), name="dispatch")
 class ContactViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing user contacts.
@@ -307,6 +311,8 @@ class ContactViewSet(viewsets.ModelViewSet):
             "contacts": serializer.data
         })
 
+
+@method_decorator(cache_page(60 * 5), name="dispatch")
 class OrderViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing user orders.
